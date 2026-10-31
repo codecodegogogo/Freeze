@@ -84,6 +84,9 @@
     <string name="detail_action_unfreeze_summary">Restore background availability</string>
     <string name="detail_action_freeze">Freeze app</string>
     <string name="detail_action_freeze_summary">Stop background activity</string>
+    <string name="detail_action_shortcut">Add shortcut</string>
+    <string name="detail_action_shortcut_summary">Stay frozen, open from Home</string>
+    <string name="detail_action_shortcut_summary_unfrozen">Add a Home screen icon</string>
     <string name="detail_action_pin">Pin app</string>
     <string name="detail_action_pin_summary">Pin to the top of the list</string>
     <string name="detail_action_unpin">Unpin app</string>
@@ -155,6 +158,7 @@
     <string name="operation_failed">Operation failed: %s</string>
     <string name="msg_selected">Selected: %s</string>
     <string name="msg_operation_in_progress">Processing...</string>
+    <string name="msg_shortcut_unsupported">This launcher does not support adding shortcuts</string>
     <string name="msg_exported">Exported: %s</string>
     <string name="msg_imported">Imported: %s</string>
     <string name="msg_text_copied">Copied: %s</string>

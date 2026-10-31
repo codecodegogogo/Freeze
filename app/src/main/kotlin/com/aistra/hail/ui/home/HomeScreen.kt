@@ -38,6 +38,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.AddToHomeScreen
 import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.outlined.AcUnit
 import androidx.compose.material.icons.outlined.Add
@@ -122,6 +123,7 @@ import com.aistra.hail.ui.main.HailRoute
 import com.aistra.hail.utils.FuzzySearch
 import com.aistra.hail.utils.HIsland
 import com.aistra.hail.utils.HPackages
+import com.aistra.hail.utils.HShortcuts
 import com.aistra.hail.utils.HShizuku
 import com.aistra.hail.utils.HUI
 import com.aistra.hail.utils.PinyinSearch
@@ -799,6 +801,29 @@ fun HomeScreen(
                     ) {
                         actionApp = null
                         setListFrozen(!frozen, listOf(info), currentTagWorkingMode)
+                    },
+                )
+            }
+            if (installed) {
+                add(
+                    HailDetailAction(
+                        title = stringResource(R.string.detail_action_shortcut),
+                        summary = stringResource(
+                            if (frozen) {
+                                R.string.detail_action_shortcut_summary
+                            } else {
+                                R.string.detail_action_shortcut_summary_unfrozen
+                            },
+                        ),
+                        icon = Icons.AutoMirrored.Outlined.AddToHomeScreen,
+                    ) {
+                        actionApp = null
+                        scope.launch {
+                            val added = withContext(Dispatchers.IO) {
+                                HShortcuts.addLaunchShortcut(info, info.name)
+                            }
+                            if (!added) HUI.showToast(R.string.msg_shortcut_unsupported)
+                        }
                     },
                 )
             }

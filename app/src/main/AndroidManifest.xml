@@ -20,6 +20,8 @@
             tools:ignore="ProtectedPermissions"/>
     <uses-permission android:name="com.oasisfeng.island.permission.FREEZE_PACKAGE"/>
     <uses-permission android:name="com.oasisfeng.island.permission.SUSPEND_PACKAGE"/>
+    <!-- Legacy pinned shortcuts on Android 7.x, used by ShortcutManagerCompat. -->
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
 
     <application
             android:name=".HailApp"

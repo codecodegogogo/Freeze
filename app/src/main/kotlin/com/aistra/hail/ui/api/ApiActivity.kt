@@ -247,8 +247,17 @@ class ApiActivity : ComponentActivity() {
                         HIsland.ensureLaunchIntentExists(pkg)
                     }
                 }
-                packageManager.getLaunchIntentForPackage(pkg)?.let(::startActivity)
-                    ?: throw ActivityNotFoundException(getString(R.string.activity_not_found))
+                val launchIntent = packageManager.getLaunchIntentForPackage(pkg)
+                if (launchIntent == null) {
+                    val stillFrozen = withContext(Dispatchers.IO) {
+                        AppManager.isAppFrozen(pkg, workingMode)
+                    }
+                    if (stillFrozen) {
+                        throw IllegalStateException(getString(R.string.permission_denied))
+                    }
+                    throw ActivityNotFoundException(getString(R.string.activity_not_found))
+                }
+                startActivity(launchIntent)
             }.onSuccess {
                 finish()
             }.onFailure {

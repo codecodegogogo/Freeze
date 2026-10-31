@@ -80,6 +80,9 @@
     <string name="detail_action_unfreeze_summary">恢复后台可用</string>
     <string name="detail_action_freeze">冻结应用</string>
     <string name="detail_action_freeze_summary">停止后台运行</string>
+    <string name="detail_action_shortcut">添加快捷方式</string>
+    <string name="detail_action_shortcut_summary">保持冻结，桌面直接打开</string>
+    <string name="detail_action_shortcut_summary_unfrozen">添加桌面启动图标</string>
     <string name="detail_action_pin">置顶应用</string>
     <string name="detail_action_pin_summary">固定列表首位</string>
     <string name="detail_action_unpin">取消置顶</string>
@@ -143,6 +146,7 @@
     <string name="operation_failed">操作失败：%s</string>
     <string name="msg_selected">已选择：%s</string>
     <string name="msg_operation_in_progress">正在处理...</string>
+    <string name="msg_shortcut_unsupported">当前桌面不支持添加快捷方式</string>
     <string name="msg_exported">已导出：%s</string>
     <string name="msg_imported">已导入：%s</string>
     <string name="msg_text_copied">已复制：%s</string>
