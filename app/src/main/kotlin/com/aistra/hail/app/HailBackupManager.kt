@@ -138,6 +138,7 @@ object HailBackupManager {
 
         app.setAppTheme(HailData.appTheme)
         XposedSettingsSync.update(HailData.mipushEnhance)
+        XposedSettingsSync.updateOnDemandUnfreeze(HailData.onDemandUnfreeze)
         CalendarDisguise.apply(HailData.calendarDisguise)
     }
 

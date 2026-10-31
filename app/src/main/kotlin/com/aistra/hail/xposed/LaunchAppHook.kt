@@ -21,6 +21,7 @@ class LaunchAppHook : IXposedHookLoadPackage {
         if (param.packageName == "android" || param.packageName == "com.xiaomi.xmsf") {
             XposedBridge.log("Freeze-MiPush/reference: classic entry loaded in ${param.processName}")
             MiPushNotificationHook().handleLoadPackage(param)
+            if (param.packageName == "android") OnDemandUnfreezeHook().handleLoadPackage(param)
             return
         }
         if (!HTarget.O || !param.isFirstApplication || param.packageName == BuildConfig.APPLICATION_ID) {

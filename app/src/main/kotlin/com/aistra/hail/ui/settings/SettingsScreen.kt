@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Terminal
@@ -156,6 +157,10 @@ fun SettingsScreen(
     val mipushEnhance = rememberBooleanPreference(
         HailData.MIPUSH_ENHANCE,
         HailData.DEFAULT_MIPUSH_ENHANCE,
+    )
+    val onDemandUnfreeze = rememberBooleanPreference(
+        HailData.ON_DEMAND_UNFREEZE,
+        HailData.DEFAULT_ON_DEMAND_UNFREEZE,
     )
 
     var messageDialog by remember { mutableStateOf<MessageDialog?>(null) }
@@ -586,6 +591,15 @@ fun SettingsScreen(
                         },
                         title = stringResource(R.string.mipush_enhance),
                         startAction = { PreferenceIcon(Icons.Outlined.NotificationsActive) },
+                    )
+                    SwitchPreference(
+                        checked = onDemandUnfreeze.first.value,
+                        onCheckedChange = {
+                            onDemandUnfreeze.second(it)
+                            XposedSettingsSync.updateOnDemandUnfreeze(it)
+                        },
+                        title = stringResource(R.string.on_demand_unfreeze),
+                        startAction = { PreferenceIcon(Icons.Outlined.Link) },
                     )
                     SwitchPreference(
                         checked = fuzzySearch.first.value,

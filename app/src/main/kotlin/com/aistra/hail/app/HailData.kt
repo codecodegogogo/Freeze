@@ -82,6 +82,7 @@ object HailData {
     const val HOME_ICON_COUNT = "home_icon_count"
     const val FUZZY_SEARCH = "fuzzy_search"
     const val MIPUSH_ENHANCE = "mipush_enhance"
+    const val ON_DEMAND_UNFREEZE = "on_demand_unfreeze"
     const val KEY_APP_OPERATIONS = "app_operations"
     const val DEFAULT_BIOMETRIC_LOGIN = false
     const val DEFAULT_CALENDAR_DISGUISE = false
@@ -91,6 +92,7 @@ object HailData {
     const val DEFAULT_ACTION_BUTTON_POSITION = ACTION_BUTTON_BOTTOM_RIGHT
     const val DEFAULT_FUZZY_SEARCH = false
     const val DEFAULT_MIPUSH_ENHANCE = false
+    const val DEFAULT_ON_DEMAND_UNFREEZE = false
 
     private val sp = PreferenceManager.getDefaultSharedPreferences(app)
     val sortBy get() = sp.getString(SORT_BY, SORT_NAME)
@@ -116,6 +118,7 @@ object HailData {
     val homeIconCount get() = sp.getInt(HOME_ICON_COUNT, 5).coerceIn(3, 8)
     val fuzzySearch get() = sp.getBoolean(FUZZY_SEARCH, DEFAULT_FUZZY_SEARCH)
     val mipushEnhance get() = sp.getBoolean(MIPUSH_ENHANCE, DEFAULT_MIPUSH_ENHANCE)
+    val onDemandUnfreeze get() = sp.getBoolean(ON_DEMAND_UNFREEZE, DEFAULT_ON_DEMAND_UNFREEZE)
     fun workingPermission(mode: String): String =
         WORKING_PERMISSION_VALUES.drop(1).firstOrNull { mode.startsWith(it) } ?: MODE_DEFAULT
 

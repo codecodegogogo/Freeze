@@ -32,6 +32,16 @@ object XposedSettingsSync {
         }
     }
 
+    fun updateOnDemandUnfreeze(value: Boolean) {
+        runCatching {
+            context.sendBroadcast(
+                Intent(OnDemandUnfreezeSettings.ACTION_SETTINGS_CHANGED)
+                    .setPackage("android")
+                    .putExtra(OnDemandUnfreezeSettings.KEY_ENABLED, value),
+            )
+        }.onFailure { Log.w("Freeze-OnDemand", "Cannot broadcast on-demand switch", it) }
+    }
+
     internal fun migrateLegacyPreferences(context: Context) {
         val name = "${BuildConfig.APPLICATION_ID}_preferences"
         val preferences = context.getSharedPreferences(name, Context.MODE_PRIVATE)

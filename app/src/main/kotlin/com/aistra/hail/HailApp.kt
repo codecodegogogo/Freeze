@@ -19,6 +19,7 @@ class HailApp : Application() {
         XposedSettingsSync.prepare(this)
         CalendarDisguise.apply(HailData.calendarDisguise)
         XposedSettingsSync.start(HailData.mipushEnhance)
+        XposedSettingsSync.updateOnDemandUnfreeze(HailData.onDemandUnfreeze)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
             getSystemService<ShortcutManager>()?.removeAllDynamicShortcuts()
         }

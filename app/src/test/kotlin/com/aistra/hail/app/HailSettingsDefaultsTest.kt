@@ -30,6 +30,7 @@ class HailSettingsDefaultsTest {
         assertFalse(HailData.textlessMode)
         assertTrue(HailData.hapticFeedback)
         assertFalse(HailData.mipushEnhance)
+        assertFalse(HailData.onDemandUnfreeze)
         assertFalse(HailData.fuzzySearch)
     }
 

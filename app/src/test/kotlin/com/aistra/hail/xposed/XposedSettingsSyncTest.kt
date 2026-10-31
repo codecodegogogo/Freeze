@@ -83,6 +83,20 @@ class XposedSettingsSyncTest {
         }
     }
 
+    @Test
+    fun togglingTheOnDemandSwitchBroadcastsToSystemServer() {
+        XposedSettingsSync.prepare(context)
+        XposedSettingsSync.updateOnDemandUnfreeze(true)
+
+        val intents = shadowOf(RuntimeEnvironment.getApplication())
+            .broadcastIntents
+            .filter { it.action == OnDemandUnfreezeSettings.ACTION_SETTINGS_CHANGED }
+        assertEquals(listOf("android"), intents.map { it.`package` })
+        intents.forEach {
+            assertTrue(it.getBooleanExtra(OnDemandUnfreezeSettings.KEY_ENABLED, false))
+        }
+    }
+
     private fun pushPreferences() = context.getSharedPreferences("mipush", Context.MODE_PRIVATE)
 
     private fun writeLegacy(xml: String): File =

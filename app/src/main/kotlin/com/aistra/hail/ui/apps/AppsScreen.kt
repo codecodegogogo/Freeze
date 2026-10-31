@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.aistra.hail.ui.apps
 
 import android.content.Intent
@@ -7,17 +9,20 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -39,8 +44,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.state.ToggleableState
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
@@ -51,10 +60,17 @@ import com.aistra.hail.ui.common.AppIcon
 import com.aistra.hail.ui.common.EmptyState
 import com.aistra.hail.ui.common.HailAction
 import com.aistra.hail.ui.common.HailActionGrid
-import com.aistra.hail.ui.common.HailGroup
+import com.aistra.hail.ui.common.HailDialog
+import com.aistra.hail.ui.common.HailDialogAddChip
+import com.aistra.hail.ui.common.HailDialogButtonRow
+import com.aistra.hail.ui.common.HailDialogChip
+import com.aistra.hail.ui.common.HailDialogLabel
+import com.aistra.hail.ui.common.HailDialogTextField
+import com.aistra.hail.ui.common.HailDialogWideButton
 import com.aistra.hail.ui.common.HailScreenScaffold
-import com.aistra.hail.ui.common.HailSelectablePill
+import com.aistra.hail.ui.common.rememberHailDialogColors
 import com.aistra.hail.ui.common.rememberHapticClick
+import com.aistra.hail.ui.home.hasTagNameConflict
 import com.aistra.hail.ui.main.HailRoute
 import com.aistra.hail.utils.FuzzySearch
 import com.aistra.hail.utils.HFiles
@@ -103,6 +119,9 @@ fun AppsScreen(
     var reloadVersion by remember { mutableIntStateOf(0) }
     var showFilters by remember { mutableStateOf(false) }
     var showGroupDialog by remember { mutableStateOf(false) }
+    var showNewTagDialog by remember { mutableStateOf(false) }
+    var newTagName by remember { mutableStateOf(TextFieldValue()) }
+    var newTagError by remember { mutableStateOf<String?>(null) }
     var actionApp by remember { mutableStateOf<ApplicationInfo?>(null) }
     var message by remember { mutableStateOf<AppsMessage?>(null) }
     var pendingUninstall by remember { mutableStateOf<ApplicationInfo?>(null) }
@@ -111,7 +130,7 @@ fun AppsScreen(
         HailData.checkedList.mapTo(mutableSetOf()) { it.packageName }
     }
     var draftChecked by remember { mutableStateOf<Set<String>>(originalChecked) }
-    val tags = remember { HailData.tags.toList() }
+    var tags by remember { mutableStateOf(HailData.tags.toList()) }
     var targetTagId by remember {
         mutableIntStateOf(tags.firstOrNull()?.second ?: 0)
     }
@@ -320,146 +339,135 @@ fun AppsScreen(
             stringResource(R.string.sort_install),
             stringResource(R.string.sort_update),
         )
-        WindowBottomSheet(
-            show = true,
+        val selectedSortIndex = when (HailData.sortBy) {
+            HailData.SORT_INSTALL -> 1
+            HailData.SORT_UPDATE -> 2
+            else -> 0
+        }
+        HailDialog(
             title = stringResource(R.string.title_filter_sort),
             onDismissRequest = { showFilters = false },
         ) {
-            HailGroup(title = stringResource(R.string.sort_by)) {
-                val selectedSortIndex = when (HailData.sortBy) {
-                    HailData.SORT_INSTALL -> 1
-                    HailData.SORT_UPDATE -> 2
-                    else -> 0
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    sortEntries.forEachIndexed { index, entry ->
-                        FilterChoice(
-                            text = entry,
-                            selected = index == selectedSortIndex,
-                            onClick = {
-                                HailData.changeAppsSort(
-                                    when (index) {
-                                        1 -> HailData.SORT_INSTALL
-                                        2 -> HailData.SORT_UPDATE
-                                        else -> HailData.SORT_NAME
-                                    },
-                                )
-                                settingsVersion++
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+            HailDialogLabel(stringResource(R.string.sort_by))
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                sortEntries.forEachIndexed { index, entry ->
+                    HailDialogChip(
+                        text = entry,
+                        selected = index == selectedSortIndex,
+                        onClick = {
+                            HailData.changeAppsSort(
+                                when (index) {
+                                    1 -> HailData.SORT_INSTALL
+                                    2 -> HailData.SORT_UPDATE
+                                    else -> HailData.SORT_NAME
+                                },
+                            )
+                            settingsVersion++
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
-            Spacer(Modifier.height(12.dp))
-            HailGroup(title = stringResource(R.string.filter_by)) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        FilterChoice(
-                            text = stringResource(R.string.filter_user_apps),
-                            selected = HailData.filterUserApps,
-                            onClick = {
-                                val enabled = !HailData.filterUserApps
-                                HailData.changeAppsFilter(HailData.FILTER_USER_APPS, enabled)
-                                if (enabled) {
+            Spacer(Modifier.height(18.dp))
+            HailDialogLabel(stringResource(R.string.filter_scope))
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                HailDialogChip(
+                    text = stringResource(R.string.filter_user_apps),
+                    selected = HailData.filterUserApps,
+                    onClick = {
+                        val enabled = !HailData.filterUserApps
+                        HailData.changeAppsFilter(HailData.FILTER_USER_APPS, enabled)
+                        if (enabled) {
+                            HailData.changeAppsFilter(
+                                HailData.FILTER_SYSTEM_APPS,
+                                false,
+                            )
+                        }
+                        settingsVersion++
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+                HailDialogChip(
+                    text = stringResource(R.string.filter_system_apps),
+                    selected = HailData.filterSystemApps,
+                    onClick = {
+                        if (!HailData.filterSystemApps) {
+                            message = AppsMessage(
+                                message = resources.getString(R.string.freeze_system_app),
+                                actionLabel = resources.getString(R.string.action_continue),
+                                action = {
                                     HailData.changeAppsFilter(
                                         HailData.FILTER_SYSTEM_APPS,
-                                        false,
+                                        true,
                                     )
-                                }
-                                settingsVersion++
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                        FilterChoice(
-                            text = stringResource(R.string.filter_system_apps),
-                            selected = HailData.filterSystemApps,
-                            onClick = {
-                                if (!HailData.filterSystemApps) {
-                                    message = AppsMessage(
-                                        message = resources.getString(R.string.freeze_system_app),
-                                        actionLabel = resources.getString(R.string.action_continue),
-                                        action = {
-                                            HailData.changeAppsFilter(
-                                                HailData.FILTER_SYSTEM_APPS,
-                                                true,
-                                            )
-                                            HailData.changeAppsFilter(
-                                                HailData.FILTER_USER_APPS,
-                                                false,
-                                            )
-                                            settingsVersion++
-                                        },
-                                    )
-                                } else {
                                     HailData.changeAppsFilter(
-                                        HailData.FILTER_SYSTEM_APPS,
+                                        HailData.FILTER_USER_APPS,
                                         false,
                                     )
                                     settingsVersion++
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        FilterChoice(
-                            text = stringResource(R.string.filter_frozen_apps),
-                            selected = HailData.filterFrozenApps,
-                            onClick = {
-                                HailData.changeAppsFilter(
-                                    HailData.FILTER_FROZEN_APPS,
-                                    !HailData.filterFrozenApps,
-                                )
-                                settingsVersion++
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                        FilterChoice(
-                            text = stringResource(R.string.filter_unfrozen_apps),
-                            selected = HailData.filterUnfrozenApps,
-                            onClick = {
-                                HailData.changeAppsFilter(
-                                    HailData.FILTER_UNFROZEN_APPS,
-                                    !HailData.filterUnfrozenApps,
-                                )
-                                settingsVersion++
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
+                                },
+                            )
+                        } else {
+                            HailData.changeAppsFilter(
+                                HailData.FILTER_SYSTEM_APPS,
+                                false,
+                            )
+                            settingsVersion++
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                )
             }
-            Button(
-                onClick = { showFilters = false },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 16.dp),
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(stringResource(R.string.action_done))
+                HailDialogChip(
+                    text = stringResource(R.string.filter_frozen_apps),
+                    selected = HailData.filterFrozenApps,
+                    onClick = {
+                        HailData.changeAppsFilter(
+                            HailData.FILTER_FROZEN_APPS,
+                            !HailData.filterFrozenApps,
+                        )
+                        settingsVersion++
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+                HailDialogChip(
+                    text = stringResource(R.string.filter_unfrozen_apps),
+                    selected = HailData.filterUnfrozenApps,
+                    onClick = {
+                        HailData.changeAppsFilter(
+                            HailData.FILTER_UNFROZEN_APPS,
+                            !HailData.filterUnfrozenApps,
+                        )
+                        settingsVersion++
+                    },
+                    modifier = Modifier.weight(1f),
+                )
             }
+            Spacer(Modifier.height(20.dp))
+            HailDialogWideButton(
+                text = stringResource(R.string.action_done),
+                onClick = { showFilters = false },
+            )
         }
     }
 
     if (showGroupDialog && hasPendingChanges) {
         val addedCount = addedPackages.size
         val removedCount = removedPackages.size
+        val dialogColors = rememberHailDialogColors()
         val summary = when {
             addedCount > 0 && removedCount > 0 -> resources.getString(
                 R.string.msg_add_and_remove_apps,
@@ -469,69 +477,122 @@ fun AppsScreen(
             addedCount > 0 -> resources.getString(R.string.msg_add_apps_to_group, addedCount)
             else -> resources.getString(R.string.msg_remove_apps_from_home, removedCount)
         }
-        WindowDialog(
-            show = true,
+        HailDialog(
+            title = stringResource(R.string.title_add_to_group),
+            showHandle = false,
+            titleAlign = TextAlign.Start,
             onDismissRequest = { showGroupDialog = false },
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.title_add_to_group),
-                    style = MiuixTheme.textStyles.title3,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Text(
-                    text = summary,
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-                if (addedCount > 0) {
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(tags, key = { it.second }) { tag ->
-                            GroupChoice(
-                                text = tag.first,
-                                selected = targetTagId == tag.second,
-                                onClick = { targetTagId = tag.second },
-                            )
-                        }
-                    }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+            Text(
+                text = summary,
+                color = dialogColors.secondary,
+                fontSize = 14.sp,
+            )
+            if (addedCount > 0) {
+                Spacer(Modifier.height(16.dp))
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 200.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    TextButton(
-                        text = stringResource(android.R.string.cancel),
-                        onClick = { showGroupDialog = false },
-                        modifier = Modifier.weight(1f),
-                    )
-                    Button(
-                        onClick = {
-                            removedPackages.forEach {
-                                HailData.removeCheckedApp(it, saveApps = false)
-                            }
-                            addedPackages.forEach {
-                                HailData.addCheckedApp(
-                                    packageName = it,
-                                    tagId = targetTagId,
-                                    saveApps = false,
-                                )
-                            }
-                            HailData.saveApps()
-                            showGroupDialog = false
-                            onBack()
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(stringResource(R.string.action_confirm_add))
+                    tags.forEach { tag ->
+                        HailDialogChip(
+                            text = tag.first,
+                            selected = targetTagId == tag.second,
+                            leadingCheck = true,
+                            onClick = { targetTagId = tag.second },
+                        )
                     }
+                    HailDialogAddChip(
+                        text = stringResource(R.string.tag_create_new),
+                        onClick = {
+                            newTagName = TextFieldValue()
+                            newTagError = null
+                            showNewTagDialog = true
+                        },
+                    )
                 }
             }
+            Spacer(Modifier.height(20.dp))
+            HailDialogButtonRow(
+                cancelText = stringResource(android.R.string.cancel),
+                confirmText = stringResource(R.string.action_confirm_add),
+                onCancel = { showGroupDialog = false },
+                onConfirm = {
+                    removedPackages.forEach {
+                        HailData.removeCheckedApp(it, saveApps = false)
+                    }
+                    addedPackages.forEach {
+                        HailData.addCheckedApp(
+                            packageName = it,
+                            tagId = targetTagId,
+                            saveApps = false,
+                        )
+                    }
+                    HailData.saveApps()
+                    showNewTagDialog = false
+                    showGroupDialog = false
+                    onBack()
+                },
+            )
+        }
+    }
+
+    if (showNewTagDialog) {
+        val dialogColors = rememberHailDialogColors()
+        HailDialog(
+            title = stringResource(R.string.action_tag_add),
+            onDismissRequest = { showNewTagDialog = false },
+        ) {
+            HailDialogLabel(stringResource(R.string.tag_name_label))
+            Spacer(Modifier.height(8.dp))
+            HailDialogTextField(
+                value = newTagName,
+                onValueChange = {
+                    newTagName = it
+                    newTagError = null
+                },
+                placeholder = stringResource(R.string.tag_name_placeholder),
+            )
+            newTagError?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = it,
+                    color = dialogColors.error,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+            Spacer(Modifier.height(20.dp))
+            HailDialogButtonRow(
+                cancelText = stringResource(android.R.string.cancel),
+                confirmText = stringResource(android.R.string.ok),
+                onCancel = { showNewTagDialog = false },
+                onConfirm = {
+                    val name = newTagName.text.trim()
+                    val tagId = name.hashCode()
+                    when {
+                        name.isEmpty() -> {
+                            newTagError = resources.getString(R.string.tag_name_required)
+                        }
+
+                        hasTagNameConflict(HailData.tags, name, tagId) -> {
+                            newTagError = resources.getString(R.string.tag_name_exists)
+                        }
+
+                        else -> {
+                            HailData.tags.add(name to tagId)
+                            HailData.saveTags()
+                            tags = HailData.tags.toList()
+                            targetTagId = tagId
+                            showNewTagDialog = false
+                        }
+                    }
+                },
+            )
         }
     }
 
@@ -696,32 +757,4 @@ fun AppsScreen(
             }
         }
     }
-}
-
-@Composable
-private fun FilterChoice(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    HailSelectablePill(
-        text = text,
-        selected = selected,
-        onClick = onClick,
-        modifier = modifier,
-    )
-}
-
-@Composable
-private fun GroupChoice(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    HailSelectablePill(
-        text = text,
-        selected = selected,
-        onClick = onClick,
-    )
 }

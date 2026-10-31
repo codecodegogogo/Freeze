@@ -79,6 +79,23 @@
     <string name="action_import_clipboard">Import from Clipboard</string>
     <string name="action_remove_home">Remove from Home</string>
     <string name="action_unfreeze_remove_home">Unfreeze and Remove from Home</string>
+    <string name="detail_action_launch">Launch</string>
+    <string name="detail_action_unfreeze">Unfreeze app</string>
+    <string name="detail_action_unfreeze_summary">Restore background availability</string>
+    <string name="detail_action_freeze">Freeze app</string>
+    <string name="detail_action_freeze_summary">Stop background activity</string>
+    <string name="detail_action_pin">Pin app</string>
+    <string name="detail_action_pin_summary">Pin to the top of the list</string>
+    <string name="detail_action_unpin">Unpin app</string>
+    <string name="detail_action_unpin_summary">Restore list order</string>
+    <string name="detail_action_unfreeze_remove">Unfreeze and remove</string>
+    <string name="detail_action_unfreeze_remove_summary">Keep sleep rules</string>
+    <string name="detail_action_tag">Tags</string>
+    <string name="detail_action_tag_summary">Categories and policies</string>
+    <string name="detail_action_multiselect">Batch select</string>
+    <string name="detail_action_multiselect_summary">Freeze or unfreeze together</string>
+    <string name="detail_action_remove">Remove from Home</string>
+    <string name="detail_action_remove_summary">Hide desktop card</string>
     <string name="action_deselect">Deselect</string>
     <string name="action_undo">Undo</string>
     <string name="action_help">Help</string>
@@ -122,6 +139,7 @@
 \nFrozen apps will remain frozen after removal, please make sure you have unfrozen the important apps.</string>
     <string name="tap_to_select">Multiselect</string>
     <string name="filter_by">Filter</string>
+    <string name="filter_scope">Filter scope</string>
     <string name="filter_user_apps">User</string>
     <string name="filter_system_apps">System</string>
     <string name="filter_frozen_apps">Frozen</string>
@@ -205,7 +223,12 @@
     <string name="tag">Tag</string>
     <string name="tag_working_action">Tag mode</string>
     <string name="tag_working_action_default">Follow default mode</string>
+    <string name="tag_working_action_hint">Default policy for this tag</string>
+    <string name="tag_name_label">Tag name</string>
+    <string name="tag_name_placeholder">Enter tag name</string>
     <string name="tag_name_exists">This tag name already exists. Choose another name.</string>
+    <string name="tag_name_required">Enter a tag name</string>
+    <string name="tag_create_new">New group</string>
     <string name="freeze_system_app">Freezing or uninstalling system applications may cause the device to bootloop. Make sure you know what you are doing and backup your data in advance or use recovery that supports file management.</string>
     <string name="action_continue">Continue</string>
     <string name="nine_key">T9 Search</string>
@@ -230,6 +253,7 @@
     <string name="action_reinstall">Reinstall</string>
     <string name="fuzzy_search">Fuzzy Search</string>
     <string name="mipush_enhance">MiPush</string>
+    <string name="on_demand_unfreeze">Unfreeze on demand</string>
     <string name="app_theme">App theme</string>
     <string name="follow_system">Follow system</string>
     <string name="theme_light">Light</string>

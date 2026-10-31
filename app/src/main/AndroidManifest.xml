@@ -112,6 +112,10 @@
                 android:name=".xposed.MiPushSettingsProvider"
                 android:authorities="${applicationId}.mipush"
                 android:exported="true"/>
+        <provider
+                android:name=".xposed.XposedSettingsProvider"
+                android:authorities="${applicationId}.xposed"
+                android:exported="true"/>
 
         <receiver
                 android:name=".receiver.DeviceAdminReceiver"

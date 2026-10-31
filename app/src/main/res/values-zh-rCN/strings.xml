@@ -75,6 +75,23 @@
     <string name="action_import_clipboard">从剪切板导入</string>
     <string name="action_remove_home">从首页中移除</string>
     <string name="action_unfreeze_remove_home">解冻并从首页中移除</string>
+    <string name="detail_action_launch">启动运行</string>
+    <string name="detail_action_unfreeze">解冻应用</string>
+    <string name="detail_action_unfreeze_summary">恢复后台可用</string>
+    <string name="detail_action_freeze">冻结应用</string>
+    <string name="detail_action_freeze_summary">停止后台运行</string>
+    <string name="detail_action_pin">置顶应用</string>
+    <string name="detail_action_pin_summary">固定列表首位</string>
+    <string name="detail_action_unpin">取消置顶</string>
+    <string name="detail_action_unpin_summary">恢复列表排序</string>
+    <string name="detail_action_unfreeze_remove">解冻并移出首页</string>
+    <string name="detail_action_unfreeze_remove_summary">保留休眠规则</string>
+    <string name="detail_action_tag">标签分组</string>
+    <string name="detail_action_tag_summary">分类与策略配置</string>
+    <string name="detail_action_multiselect">批量多选</string>
+    <string name="detail_action_multiselect_summary">联合冻结或解冻</string>
+    <string name="detail_action_remove">从首页移除</string>
+    <string name="detail_action_remove_summary">隐藏桌面卡片</string>
     <string name="action_deselect">取消选择</string>
     <string name="action_undo">撤销</string>
     <string name="action_help">帮助</string>
@@ -110,6 +127,7 @@
 \n已冻结的应用在移除设备所有者后仍会保持冻结状态，请确保您已将重要的应用解冻。</string>
     <string name="tap_to_select">多选</string>
     <string name="filter_by">筛选</string>
+    <string name="filter_scope">筛选范围</string>
     <string name="filter_user_apps">用户</string>
     <string name="filter_system_apps">系统</string>
     <string name="filter_frozen_apps">已冻结</string>
@@ -198,7 +216,12 @@
     <string name="tag">标签</string>
     <string name="tag_working_action">标签模式</string>
     <string name="tag_working_action_default">跟随默认模式</string>
+    <string name="tag_working_action_hint">应用该标签的默认策略</string>
+    <string name="tag_name_label">标签名称</string>
+    <string name="tag_name_placeholder">输入标签名称</string>
     <string name="tag_name_exists">标签名称已存在，请换一个名称</string>
+    <string name="tag_name_required">请输入标签名称</string>
+    <string name="tag_create_new">新建分组</string>
     <string name="nine_key">T9 搜索</string>
     <string name="home_font_size">首页字体大小</string>
     <string name="home_icon_size">首页图标大小</string>
@@ -225,6 +248,7 @@
     <string name="action_reinstall">重新安装</string>
     <string name="fuzzy_search">模糊搜索</string>
     <string name="mipush_enhance">MiPush</string>
+    <string name="on_demand_unfreeze">按需解冻</string>
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
     <string name="app_theme">应用主题</string>
