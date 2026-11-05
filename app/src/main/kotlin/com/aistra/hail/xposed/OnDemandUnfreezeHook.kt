@@ -1,5 +1,6 @@
 package com.aistra.hail.xposed
 
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
@@ -119,8 +120,8 @@ class OnDemandUnfreezeHook : IXposedHookLoadPackage {
     }
 
     /**
-     * Android 15 changed executeRequest to take the Request as an argument;
-     * older releases keep it in the mRequest field.
+     * Some releases pass the Request as an argument to executeRequest;
+     * others keep it in the mRequest field.
      */
     private fun findRequest(param: XC_MethodHook.MethodHookParam): Any? {
         param.args.forEach { arg ->
@@ -159,20 +160,42 @@ class OnDemandUnfreezeHook : IXposedHookLoadPackage {
         val activityInfo = XposedHelpers.getObjectField(request, "activityInfo") as? ActivityInfo
         val packageName = activityInfo?.packageName ?: resolveTargetPackage(intent, userId) ?: return
         if (packageName == "android" || packageName == BuildConfig.APPLICATION_ID) return
-        if (!unfreezeIfNeeded(packageName, userId)) return
+        val result = unfreezeIfNeeded(packageName, userId) ?: return
+        if (activityInfo != null) {
+            log(
+                "launch ${activityInfo.packageName}/${activityInfo.name} " +
+                    "enabled=${activityInfo.enabled} " +
+                    "appEnabled=${activityInfo.applicationInfo?.enabled} " +
+                    "flags=${activityInfo.applicationInfo?.flags}"
+            )
+            ensureComponentEnabled(activityInfo, userId)
+        }
         // ActivityStarter already resolved the activity before executeRequest,
         // so update the cached info instead of clearing it (clearing makes the
-        // start fail on Android 15).
-        if (activityInfo != null && !activityInfo.enabled) {
-            markRequestEnabled(request, activityInfo)
+        // start fail on Android 15). The task description used by recents is
+        // built from this snapshot, so it must be refreshed after unfreezing
+        // even when only ApplicationInfo, not the component, was disabled.
+        if (activityInfo != null && (result.changed || needsEnabledPatch(activityInfo))) {
+            markRequestEnabled(request, activityInfo, result.appInfo)
         }
     }
 
-    private fun markRequestEnabled(request: Any, activityInfo: ActivityInfo) {
+    private fun needsEnabledPatch(activityInfo: ActivityInfo): Boolean {
+        if (!activityInfo.enabled) return true
+        val appInfo = activityInfo.applicationInfo ?: return true
+        return !appInfo.enabled || appInfo.flags and ApplicationInfo.FLAG_SUSPENDED != 0
+    }
+
+    private fun markRequestEnabled(
+        request: Any,
+        activityInfo: ActivityInfo,
+        appInfo: ApplicationInfo,
+    ) {
         val copy = ActivityInfo(activityInfo)
         copy.enabled = true
-        activityInfo.applicationInfo?.let {
-            copy.applicationInfo = ApplicationInfo(it).apply { enabled = true }
+        copy.applicationInfo = ApplicationInfo(appInfo).apply {
+            enabled = true
+            flags = flags and ApplicationInfo.FLAG_SUSPENDED.inv()
         }
         XposedHelpers.setObjectField(request, "activityInfo", copy)
         val resolveInfo = runCatching {
@@ -230,13 +253,16 @@ class OnDemandUnfreezeHook : IXposedHookLoadPackage {
         return !isHidden(appInfo)
     }
 
-    private fun unfreezeIfNeeded(packageName: String, userId: Int): Boolean {
-        val pm = packageManagerService() ?: return false
+    private fun unfreezeIfNeeded(packageName: String, userId: Int): UnfreezeResult? {
+        val pm = packageManagerService() ?: return null
         val identity = Binder.clearCallingIdentity()
         return try {
-            val appInfo = getApplicationInfo(pm, packageName, userId) ?: return false
+            val appInfo = getApplicationInfo(pm, packageName, userId) ?: return null
+            val enabledBefore = getApplicationEnabledSetting(pm, packageName, userId)
+            val hidden = isHidden(appInfo)
+            val suspended = appInfo.flags and ApplicationInfo.FLAG_SUSPENDED != 0
             var changed = false
-            if (isHidden(appInfo)) {
+            if (hidden) {
                 changed = callBoolean(
                     pm,
                     "setApplicationHiddenSettingAsUser",
@@ -245,14 +271,12 @@ class OnDemandUnfreezeHook : IXposedHookLoadPackage {
                     userId,
                 ) || changed
             }
-            if (appInfo.flags and ApplicationInfo.FLAG_SUSPENDED != 0) {
+            if (suspended) {
                 changed = unsuspendPackage(pm, packageName, userId) || changed
             }
             // Only COMPONENT_ENABLED_STATE_DISABLED is set by Freeze; a state
             // chosen by the user in system settings is left untouched.
-            if (getApplicationEnabledSetting(pm, packageName, userId) ==
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-            ) {
+            if (enabledBefore == PackageManager.COMPONENT_ENABLED_STATE_DISABLED) {
                 XposedHelpers.callMethod(
                     pm,
                     "setApplicationEnabledSetting",
@@ -265,15 +289,29 @@ class OnDemandUnfreezeHook : IXposedHookLoadPackage {
                 XposedHelpers.callMethod(pm, "setPackageStoppedState", packageName, false, userId)
                 changed = true
             }
-            if (changed) log("unfroze $packageName userId=$userId")
-            changed
+            if (changed) {
+                val enabledAfter = getApplicationEnabledSetting(pm, packageName, userId)
+                log(
+                    "unfroze $packageName userId=$userId " +
+                        "enabled=$enabledBefore->$enabledAfter " +
+                        "hidden=$hidden suspended=$suspended"
+                )
+            }
+            // Reload only after a state change: the snapshot taken while the
+            // app was frozen has no usable ApplicationInfo for the task
+            // description, while the common already-enabled path stays cheap.
+            val currentAppInfo =
+                if (changed) getApplicationInfo(pm, packageName, userId) ?: appInfo else appInfo
+            UnfreezeResult(changed, currentAppInfo)
         } catch (t: Throwable) {
             log("unfreeze $packageName failed: $t")
-            false
+            null
         } finally {
             Binder.restoreCallingIdentity(identity)
         }
     }
+
+    private data class UnfreezeResult(val changed: Boolean, val appInfo: ApplicationInfo)
 
     private fun getApplicationInfo(pm: Any, packageName: String, userId: Int): ApplicationInfo? {
         val method = pm.javaClass.methods.firstOrNull { method ->
@@ -295,6 +333,83 @@ class OnDemandUnfreezeHook : IXposedHookLoadPackage {
         runCatching {
             XposedHelpers.callMethod(pm, "getApplicationEnabledSetting", packageName, userId) as Int
         }.getOrDefault(PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)
+
+    private fun getActivityInfo(
+        pm: Any,
+        component: ComponentName,
+        userId: Int,
+        flags: Long = PackageManager.MATCH_DISABLED_COMPONENTS.toLong(),
+    ): ActivityInfo? {
+        val method = pm.javaClass.methods.firstOrNull { method ->
+            method.name == "getActivityInfo" &&
+                method.parameterTypes.size == 3 &&
+                method.parameterTypes[0] == ComponentName::class.java
+        } ?: return null
+        val flagsArg = if (method.parameterTypes[1] == Int::class.javaPrimitiveType) {
+            flags.toInt()
+        } else {
+            flags
+        }
+        return method.invoke(pm, component, flagsArg, userId) as? ActivityInfo
+    }
+
+    /**
+     * Some apps keep their deep-link entry activity disabled and enable it
+     * themselves at runtime. After an on-demand unfreeze the package is
+     * enabled, but the activity can still be disabled, which makes launchers
+     * that query PackageManager for the recents icon fail with
+     * NameNotFoundException. Enable the exact activity we are about to start.
+     */
+    private fun ensureComponentEnabled(activityInfo: ActivityInfo, userId: Int) {
+        val pm = packageManagerService() ?: return
+        val component = ComponentName(activityInfo.packageName, activityInfo.name)
+        val identity = Binder.clearCallingIdentity()
+        try {
+            // A query with MATCH_DISABLED_COMPONENTS reports a disabled
+            // component as enabled, so query without it: a non-null result
+            // means the component is already usable, null means it is
+            // disabled (or does not exist, which the enable call rejects).
+            if (getActivityInfo(pm, component, userId, 0L) != null) return
+            val state = runCatching {
+                XposedHelpers.callMethod(pm, "getComponentEnabledSetting", component, userId) as Int
+            }.getOrDefault(PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)
+            if (state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER) {
+                log("component $component disabled by user, skip")
+                return
+            }
+            setComponentEnabled(pm, component, userId)
+            log("enabled component $component state=$state")
+        } catch (t: Throwable) {
+            log("enable component $component failed: $t")
+        } finally {
+            Binder.restoreCallingIdentity(identity)
+        }
+    }
+
+    private fun setComponentEnabled(pm: Any, component: ComponentName, userId: Int) {
+        val method = pm.javaClass.methods.firstOrNull { method ->
+            method.name == "setComponentEnabledSetting" &&
+                method.parameterTypes.size in 4..5 &&
+                method.parameterTypes[0] == ComponentName::class.java
+        } ?: return
+        val args = if (method.parameterTypes.size == 5) {
+            arrayOf(
+                component,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP,
+                userId,
+                BuildConfig.APPLICATION_ID,
+            )
+        } else {
+            arrayOf(
+                component,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP,
+                userId,
+            )
+        }
+        method.invoke(pm, *args)
+    }
 
     private fun callBoolean(pm: Any, methodName: String, vararg args: Any?): Boolean =
         runCatching {
