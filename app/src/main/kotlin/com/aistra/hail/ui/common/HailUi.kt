@@ -5,7 +5,13 @@ package com.aistra.hail.ui.common
 import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -78,6 +84,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -104,6 +111,54 @@ fun rememberHapticClick(onClick: () -> Unit): () -> Unit {
                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
             }
             currentOnClick()
+        }
+    }
+}
+
+/**
+ * A floating toast that stays visible while [visible] is true.
+ * Unlike [HUI.showToast] it is part of the UI tree, so it can follow a long
+ * running operation and disappear as soon as the operation finishes.
+ */
+@Composable
+fun HailToast(
+    text: String,
+    visible: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.92f),
+        exit = fadeOut(tween(140)) + scaleOut(tween(140), targetScale = 0.96f),
+    ) {
+        Card(
+            modifier = Modifier.shadow(
+                elevation = 10.dp,
+                shape = RoundedCornerShape(22.dp),
+                clip = false,
+            ),
+            cornerRadius = 22.dp,
+            insideMargin = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
+            colors = CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.surfaceContainerHighest,
+                contentColor = MiuixTheme.colorScheme.onSurfaceContainerHighest,
+            ),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CircularProgressIndicator(
+                    size = 16.dp,
+                    strokeWidth = 2.dp,
+                )
+                Text(
+                    text = text,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerHighest,
+                    style = MiuixTheme.textStyles.body2,
+                )
+            }
         }
     }
 }

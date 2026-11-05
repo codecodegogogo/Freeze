@@ -115,6 +115,7 @@ import com.aistra.hail.ui.common.HailDialogTextField
 import com.aistra.hail.ui.common.HailQuickActionButton
 import com.aistra.hail.ui.common.HailScreenScaffold
 import com.aistra.hail.ui.common.HailSelectablePill
+import com.aistra.hail.ui.common.HailToast
 import com.aistra.hail.ui.common.rememberBooleanPreference
 import com.aistra.hail.ui.common.rememberHailDialogColors
 import com.aistra.hail.ui.common.rememberHapticClick
@@ -130,7 +131,6 @@ import com.aistra.hail.utils.PinyinSearch
 import java.text.Collator
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
@@ -379,7 +379,6 @@ fun HomeScreen(
         }
         if (groups.isEmpty()) return
         allAppsOperationInProgress = true
-        HUI.showToast(R.string.msg_operation_in_progress)
         scope.launch {
             var guide = false
             var shizukuHideNeedsRoot = false
@@ -713,20 +712,13 @@ fun HomeScreen(
                 }
             }
         }
-        if (allAppsOperationInProgress) {
-            Card(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = innerPadding.calculateTopPadding() + 12.dp),
-                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.msg_operation_in_progress),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    style = MiuixTheme.textStyles.body2,
-                )
-            }
-        }
+        HailToast(
+            text = stringResource(R.string.msg_operation_in_progress),
+            visible = allAppsOperationInProgress,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = innerPadding.calculateBottomPadding() + 24.dp),
+        )
     }
     }
 
