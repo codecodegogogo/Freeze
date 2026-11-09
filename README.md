@@ -9,6 +9,21 @@ Freeze 是基于 [Hail](https://github.com/aistra0528/Hail) 修改的 Android �
 
 完整更新说明见 [CHANGELOG.md](CHANGELOG.md)。
 
+## 界面预览
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/home.png" width="220" alt="首页"><br>首页</td>
+    <td align="center"><img src="docs/images/app-detail.png" width="220" alt="应用详情"><br>应用详情</td>
+    <td align="center"><img src="docs/images/quick-actions.png" width="220" alt="快捷操作"><br>快捷操作</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/settings.png" width="220" alt="设置"><br>设置</td>
+    <td align="center"><img src="docs/images/calendar.png" width="220" alt="日历伪装"><br>日历伪装</td>
+    <td align="center"><img src="docs/images/home-light.png" width="220" alt="浅色主题"><br>浅色主题</td>
+  </tr>
+</table>
+
 ## 快速开始
 
 1. 打开应用，进入管理界面。
