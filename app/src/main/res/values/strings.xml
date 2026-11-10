@@ -153,6 +153,8 @@
     <string name="sort_update">Last update</string>
     <string name="permission_denied">Permission denied</string>
     <string name="app_not_installed">App not installed</string>
+    <string name="app_uninstalled_clear_title">App uninstalled</string>
+    <string name="app_uninstalled_clear_message">%1$s has been uninstalled. Remove its icon from Home?</string>
     <string name="activity_not_found">Launch activity not found</string>
     <string name="shizuku_missing">Shizuku missing :(</string>
     <string name="operation_failed">Operation failed: %s</string>

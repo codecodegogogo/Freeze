@@ -141,6 +141,8 @@
     <string name="sort_update">最近更新</string>
     <string name="permission_denied">没有权限</string>
     <string name="app_not_installed">应用未安装</string>
+    <string name="app_uninstalled_clear_title">应用已卸载</string>
+    <string name="app_uninstalled_clear_message">“%1$s”已卸载，是否从首页清除该图标？</string>
     <string name="activity_not_found">无可启动活动</string>
     <string name="shizuku_missing">Shizuku 失踪了（</string>
     <string name="operation_failed">操作失败：%s</string>

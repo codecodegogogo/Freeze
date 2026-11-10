@@ -62,6 +62,7 @@ fun HailAppDetailSheet(
     onInfo: () -> Unit,
     actions: List<HailDetailAction>,
     onDismissRequest: () -> Unit,
+    uninstalled: Boolean = false,
 ) {
     val dark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
     val colors = if (dark) DarkAppDetailColors else LightAppDetailColors
@@ -72,6 +73,7 @@ fun HailAppDetailSheet(
             HailAppDetailHeader(
                 info = info,
                 colors = colors,
+                uninstalled = uninstalled,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(end = 48.dp),
@@ -109,6 +111,7 @@ fun HailAppDetailSheet(
 private fun HailAppDetailHeader(
     info: AppInfo,
     colors: AppDetailColors,
+    uninstalled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -121,6 +124,7 @@ private fun HailAppDetailHeader(
             size = 52.dp,
             showContainer = false,
             contentPadding = 0.dp,
+            uninstalled = uninstalled,
         )
         Spacer(Modifier.width(16.dp))
         Text(

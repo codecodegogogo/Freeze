@@ -121,6 +121,7 @@ import com.aistra.hail.ui.common.rememberHailDialogColors
 import com.aistra.hail.ui.common.rememberHapticClick
 import com.aistra.hail.ui.common.rememberStringPreference
 import com.aistra.hail.ui.main.HailRoute
+import com.aistra.hail.utils.AppIconCache
 import com.aistra.hail.utils.FuzzySearch
 import com.aistra.hail.utils.HIsland
 import com.aistra.hail.utils.HPackages
@@ -190,6 +191,7 @@ fun HomeScreen(
     var tagEditorSelections by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var tagEditorError by remember { mutableStateOf<String?>(null) }
     var message by remember { mutableStateOf<HomeMessage?>(null) }
+    var uninstallClearApp by remember { mutableStateOf<AppInfo?>(null) }
     var actionMenuBounds by remember { mutableStateOf<Rect?>(null) }
     var allAppsOperationInProgress by remember { mutableStateOf(false) }
     val selected = remember { mutableStateListOf<AppInfo>() }
@@ -248,6 +250,24 @@ fun HomeScreen(
     val appLabels = remember(homeApps) {
         homeApps.associate { it.info.packageName to it.label }
     }
+    val uninstalledPackages = remember(homeApps) {
+        homeApps.filter { it.uninstalled }.map { it.info.packageName }.toSet()
+    }
+    // Keep a copy of every home icon on disk so uninstalled apps can still show
+    // their original icon (grayed out) after the APK is gone.
+    LaunchedEffect(homeApps) {
+        withContext(Dispatchers.IO) {
+            val appContext = context.applicationContext
+            val userId = HPackages.myUserId
+            val keepPackages = homeApps.map { it.info.packageName }.toSet()
+            AppIconCache.prunePersistedIcons(appContext, keepPackages, userId)
+            homeApps.forEach {
+                if (!it.uninstalled) {
+                    AppIconCache.persistIcon(appContext, it.info.packageName, userId)
+                }
+            }
+        }
+    }
     // AppInfo.equals only compares package names, so tagIdList mutations can leave
     // homeApps/tags equal by value. Include the explicit data versions in the key.
     val appsByTag = remember(homeApps, tags, dataVersion, tagVersion) {
@@ -291,9 +311,7 @@ fun HomeScreen(
             return
         }
         if (HPackages.isAppUninstalled(info.packageName)) {
-            message = HomeMessage(
-                message = resources.getString(R.string.app_not_installed),
-            )
+            uninstallClearApp = info
             return
         }
         if (AppManager.isAppFrozen(info.packageName, currentTagWorkingMode) &&
@@ -668,6 +686,7 @@ fun HomeScreen(
                                 HailData.tagWorkingMode(it.second)
                             } ?: HailData.workingMode,
                             appLabels = appLabels,
+                            uninstalledPackages = uninstalledPackages,
                             refreshToken = dataVersion,
                             contentPadding = PaddingValues(
                                 start = 12.dp,
@@ -696,6 +715,7 @@ fun HomeScreen(
                         multiselect = multiselect,
                         workingMode = currentTagWorkingMode,
                         appLabels = appLabels,
+                        uninstalledPackages = uninstalledPackages,
                         refreshToken = dataVersion,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
@@ -916,6 +936,7 @@ fun HomeScreen(
             },
             actions = detailActions,
             onDismissRequest = { actionApp = null },
+            uninstalled = !installed,
         )
     }
 
@@ -1257,6 +1278,40 @@ fun HomeScreen(
             }
         }
     }
+
+    uninstallClearApp?.let { info ->
+        val colors = rememberHailDialogColors()
+        HailDialog(
+            title = stringResource(R.string.app_uninstalled_clear_title),
+            onDismissRequest = { uninstallClearApp = null },
+        ) {
+            Text(
+                text = stringResource(
+                    R.string.app_uninstalled_clear_message,
+                    appLabels[info.packageName] ?: info.packageName,
+                ),
+                color = colors.secondary,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(16.dp))
+            HailDialogButtonRow(
+                cancelText = stringResource(android.R.string.cancel),
+                confirmText = stringResource(R.string.action_remove_home),
+                onCancel = { uninstallClearApp = null },
+                onConfirm = {
+                    uninstallClearApp = null
+                    AppIconCache.deletePersistedIcon(
+                        context,
+                        info.packageName,
+                        HPackages.myUserId,
+                    )
+                    removeFromHome(info)
+                },
+            )
+        }
+    }
 }
 
 @Composable
@@ -1349,6 +1404,7 @@ private fun AppGrid(
     multiselect: Boolean,
     workingMode: String,
     appLabels: Map<String, String>,
+    uninstalledPackages: Set<String>,
     refreshToken: Int,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(12.dp),
@@ -1414,6 +1470,8 @@ private fun AppGrid(
                             size = iconSize,
                             showContainer = false,
                             contentPadding = 0.dp,
+                            uninstalled = info.packageName in uninstalledPackages,
+                            reloadToken = refreshToken,
                         )
                         if (state == AppInfo.State.FROZEN) {
                             Image(

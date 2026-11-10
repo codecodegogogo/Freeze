@@ -61,6 +61,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -736,6 +738,10 @@ fun EmptyState(
     }
 }
 
+private val GrayIconColorFilter = ColorFilter.colorMatrix(
+    ColorMatrix().apply { setToSaturation(0f) },
+)
+
 @Composable
 fun AppIcon(
     info: ApplicationInfo?,
@@ -744,35 +750,32 @@ fun AppIcon(
     packageName: String? = null,
     showContainer: Boolean = true,
     contentPadding: Dp = 4.dp,
+    uninstalled: Boolean = false,
+    reloadToken: Any? = null,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val sizePx = with(density) { size.roundToPx() }
     val iconPackageName = info?.packageName ?: packageName
     val userId = HPackages.myUserId
-    var bitmap by remember(iconPackageName, sizePx) {
+    var bitmap by remember(iconPackageName, sizePx, reloadToken) {
         mutableStateOf(
             iconPackageName?.let {
                 AppIconCache.getCachedBitmap(it, userId, sizePx)
             },
         )
     }
-    LaunchedEffect(iconPackageName, sizePx) {
+    LaunchedEffect(iconPackageName, sizePx, uninstalled, reloadToken) {
         bitmap = withContext(Dispatchers.IO) {
             runCatching {
-                when {
-                    info != null -> AppIconCache.getOrLoadBitmap(
-                        context,
-                        info,
-                        userId,
-                        sizePx,
-                    )
-
-                    packageName != null -> HPackages.getApplicationInfoOrNull(packageName)
-                        ?.let { AppIconCache.getOrLoadBitmap(context, it, userId, sizePx) }
-
-                    else -> null
+                val name = iconPackageName ?: return@runCatching null
+                val applicationInfo = info ?: HPackages.getApplicationInfoOrNull(name)
+                val loaded = if (!uninstalled && applicationInfo != null) {
+                    AppIconCache.getOrLoadBitmap(context, applicationInfo, userId, sizePx)
+                } else {
+                    null
                 }
+                loaded ?: AppIconCache.getPersistedBitmap(context, name, userId, sizePx)
             }.getOrNull()
         }
     }
@@ -793,6 +796,7 @@ fun AppIcon(
                 bitmap = image.asImageBitmap(),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize().padding(contentPadding),
+                colorFilter = if (uninstalled) GrayIconColorFilter else null,
             )
         }
     }
@@ -805,6 +809,8 @@ fun AppIcon(
     size: Dp = 48.dp,
     showContainer: Boolean = true,
     contentPadding: Dp = 4.dp,
+    uninstalled: Boolean = false,
+    reloadToken: Any? = null,
 ) = AppIcon(
     info = appInfo.applicationInfo,
     modifier = modifier,
@@ -812,4 +818,6 @@ fun AppIcon(
     packageName = appInfo.packageName,
     showContainer = showContainer,
     contentPadding = contentPadding,
+    uninstalled = uninstalled,
+    reloadToken = reloadToken,
 )
